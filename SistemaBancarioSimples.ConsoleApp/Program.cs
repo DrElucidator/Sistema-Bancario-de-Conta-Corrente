@@ -153,7 +153,6 @@ class Program
                     Console.WriteLine("Operação cancelada.");
                     break;
             }
-
         } while (menuChoice != 6);
     }
 }
