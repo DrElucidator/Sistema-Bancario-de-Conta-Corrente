@@ -2,17 +2,40 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
+class Transaction
+{
+    public DateTime Date { get; private set; }
+    public string Type { get; private set; }
+    public decimal Amount { get; private set; }
+    public decimal BalanceAfter { get; private set; }
+
+    public Transaction(string type, decimal amount, decimal balanceAfter)
+    {
+        Date = DateTime.Now;
+        Type = type;
+        Amount = amount;
+        BalanceAfter = balanceAfter;
+    }
+
+    public string GetInfo()
+    {
+        return $"{Date:G} - {Type} de R${Amount:F2} | Saldo restante: R${BalanceAfter:F2}";
+    }
+}
+
 class BankAccount
 {
     public int IDNum { get; private set; }
     public string Owner { get; set; }
     public decimal BankBalance { get; private set; }
+    private List<Transaction> transactions = new List<Transaction>();
 
     public BankAccount(string owner, decimal initialBalance)
     {
         IDNum = RandomNumberGenerator.GetInt32(1, 101);
         Owner = owner;
         BankBalance = initialBalance;
+        transactions.Add(new Transaction("Crédito (Saldo Inicial)", initialBalance, BankBalance));
     }
 
     public void Deposit(decimal amount)
@@ -20,6 +43,7 @@ class BankAccount
         if (amount > 0)
         {
             BankBalance += amount;
+            transactions.Add(new Transaction("Crédito (Depósito)", amount, BankBalance));
             Console.WriteLine($"Depósito de R${amount} realizado. Saldo atual: R${BankBalance:F2}");
         }
         else
@@ -33,6 +57,7 @@ class BankAccount
         if (amount > 0 && amount <= BankBalance)
         {
             BankBalance -= amount;
+            transactions.Add(new Transaction("Débito (Saque)", amount, BankBalance));
             Console.WriteLine($"Saque de R${amount} realizado. Saldo atual: R${BankBalance:F2}");
         }
         else
@@ -47,6 +72,8 @@ class BankAccount
         {
             BankBalance -= amount;
             destination.BankBalance += amount;
+            transactions.Add(new Transaction("Débito (Transferência)", amount, BankBalance));
+            destination.transactions.Add(new Transaction("Crédito (Transferência Recebida)", amount, destination.BankBalance));
             Console.WriteLine($"Transferência de R${amount} para {destination.Owner} realizada.");
             Console.WriteLine($"Saldo atual da conta destino ({destination.Owner}): R${destination.BankBalance:F2}");
         }
@@ -60,7 +87,17 @@ class BankAccount
     {
         Console.WriteLine($"Saldo da conta de {Owner} (ID {IDNum}): R${BankBalance:F2}");
     }
+
+    public void ShowStatement()
+    {
+        Console.WriteLine($"\nExtrato da conta de {Owner} (ID {IDNum}):");
+        for (int i = 0; i < transactions.Count; i++)
+        {
+            Console.WriteLine(transactions[i].GetInfo());
+        }
+    }
 }
+
 class Program
 {
     static void Main()
@@ -87,12 +124,13 @@ class Program
             Console.WriteLine("3 - Consultar Saldo");
             Console.WriteLine("4 - Criar nova conta");
             Console.WriteLine("5 - Transferir");
-            Console.WriteLine("6 - Cancelar");
+            Console.WriteLine("6 - Emitir Extrato");
+            Console.WriteLine("7 - Cancelar");
             Console.Write("Escolha uma opção: ");
 
             bool validOption = int.TryParse(Console.ReadLine(), out menuChoice);
 
-            if (!validOption || menuChoice < 1 || menuChoice > 6)
+            if (!validOption || menuChoice < 1 || menuChoice > 7)
             {
                 Console.WriteLine("Opção inválida! Tente novamente.");
                 continue;
@@ -150,9 +188,12 @@ class Program
                     userAccount.Transfer(destino, transf);
                     break;
                 case 6:
+                    userAccount.ShowStatement();
+                    break;
+                case 7:
                     Console.WriteLine("Operação cancelada.");
                     break;
             }
-        } while (menuChoice != 6);
+        } while (menuChoice != 7);
     }
 }
